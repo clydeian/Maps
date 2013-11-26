@@ -3,6 +3,7 @@ package com.clydex.maps;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.GoogleMap.OnInfoWindowClickListener;
+import com.google.android.gms.maps.LocationSource;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
@@ -18,11 +19,11 @@ import android.support.v4.app.FragmentActivity;
 import android.view.Menu;
 import android.widget.Toast;
 
-public class MainActivity extends FragmentActivity implements LocationListener {
+public class MainActivity extends FragmentActivity implements LocationListener,
+		LocationSource {
 
 	private GoogleMap mMap;
-	private Location myLocation;
-	private LatLng latLng;
+	private LocationManager locationManager;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -30,10 +31,8 @@ public class MainActivity extends FragmentActivity implements LocationListener {
 		setContentView(R.layout.activity_main);
 		setUpMapIfNeeded();
 
-		// Enabling MyLocation Layer of Google Map
-		mMap.setMyLocationEnabled(true);
 		// Get LocationManager object from System Service LOCATION_SERVICE
-		LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+		locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
 		// Create a criteria object to retrieve provider
 		Criteria criteria = new Criteria();
@@ -42,47 +41,38 @@ public class MainActivity extends FragmentActivity implements LocationListener {
 		String provider = locationManager.getBestProvider(criteria, true);
 
 		// Get Current Location
-		 myLocation = locationManager.getLastKnownLocation(provider);
+		Location myLocation = locationManager.getLastKnownLocation(provider);
+		if (myLocation != null) {
+			onLocationChanged(myLocation);
+		}
+		locationManager.requestLocationUpdates(provider, 20000, 0, this);
 
 		// set map type
 		mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
-		// Get latitude of the current location
-		double latitude = myLocation.getLatitude();
-
-		// Get longitude of the current location
-		double longitude = myLocation.getLongitude();
-
-		// Create a LatLng object for the current location
-		latLng = new LatLng(latitude, longitude);
-
-		// Show the current location in Google Map
-		mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-
-		// Zoom in the Google Map
-		mMap.animateCamera(CameraUpdateFactory.zoomTo(15));
-		mMap.addMarker(new MarkerOptions()
-				.position(new LatLng(latitude, longitude))
-				.title("You are here!")
-				.icon(BitmapDescriptorFactory
-						.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-
 		// Zoom in the Tyfanny's Map
 		Marker Marker2 = mMap.addMarker(new MarkerOptions().position(
 				new LatLng(8.18706, 126.35402)).title("Tyfanny's Restaurant"));
-		Marker2.getId();
 
 		mMap.setOnInfoWindowClickListener(new OnInfoWindowClickListener() {
 
 			@Override
 			public void onInfoWindowClick(Marker marker) {
-
-				Toast.makeText(getBaseContext(), "Click Info Window",
+				Toast.makeText(getBaseContext(), "Click Info Window1",
 						Toast.LENGTH_SHORT).show();
 			}
 
 		});
 
+	}
+
+	@Override
+	public void onPause() {
+		if (locationManager != null) {
+			locationManager.removeUpdates(this);
+		}
+
+		super.onPause();
 	}
 
 	@Override
@@ -94,15 +84,28 @@ public class MainActivity extends FragmentActivity implements LocationListener {
 
 	@Override
 	public void onLocationChanged(Location location) {
-		// Get latitude of the current location
-				double latitude = myLocation.getLatitude();
 
-				// Get longitude of the current location
-				double longitude = myLocation.getLongitude();
+		// Enabling MyLocation Layer of Google Map
+		mMap.setMyLocationEnabled(true);
+		// Getting latitude of the current location
+		double latitude = location.getLatitude();
 
-				// Create a LatLng object for the current location
-				latLng = new LatLng(latitude, longitude);
+		// Getting longitude of the current location
+		double longitude = location.getLongitude();
 
+		// Creating a LatLng object for the current location
+		LatLng latLng = new LatLng(latitude, longitude);
+
+		// Showing the current location in Google Map
+		mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+
+		// Zoom in the Google Map
+		mMap.animateCamera(CameraUpdateFactory.zoomTo(15));
+		mMap.addMarker(new MarkerOptions()
+				.position(new LatLng(latitude, longitude))
+				.title("You are here!")
+				.icon(BitmapDescriptorFactory
+						.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
 	}
 
 	@Override
@@ -140,4 +143,15 @@ public class MainActivity extends FragmentActivity implements LocationListener {
 		return true;
 	}
 
+	@Override
+	public void activate(OnLocationChangedListener arg0) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void deactivate() {
+		// TODO Auto-generated method stub
+
+	}
 }
